@@ -14,11 +14,20 @@ const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBg})` }}
-        />
-        <div className="absolute inset-0 bg-background/70" />
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        >
+          <source src="/videos/video.mp4" type="video/mp4" />
+          <source src={heroBg} />
+        </video>
+
+        {/* Overlay with transparency */}
+        <div className="absolute inset-0 bg-background/40" />
 
         {/* Top bar */}
         <motion.div

@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 6% 5.5%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 6% 5.5%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 5% 55%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --evidence-low: 0 84% 60%;
+    --evidence-high: 142 71% 45%;
+    --evidence-neutral: 217 91% 60%;
+    --evidence-warning: 38 92% 50%;
+
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.125rem;
+
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+    letter-spacing: -0.03em;
+  }
+}
+
+@layer components {
+  .forensic-card {
+    @apply bg-card border border-border rounded-sm p-6;
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+    transition: all 0.2s ease;
+  }
+
+  .forensic-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px 0px rgba(59, 130, 246, 0.2);
+  }
+
+  .label-forensic {
+    @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground;
+  }
+
+  .data-point {
+    @apply font-mono text-xs text-primary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .input-forensic {
+    @apply bg-transparent border-b border-border focus:border-primary transition-colors py-2 outline-none w-full text-foreground placeholder:text-muted-foreground;
+  }
+
+  .scan-line {
+    @apply h-[1px] w-full;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  }
+
+  .btn-depress {
+    @apply transition-all duration-200;
+  }
+
+  .btn-depress:active {
+    transform: scale(0.98);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

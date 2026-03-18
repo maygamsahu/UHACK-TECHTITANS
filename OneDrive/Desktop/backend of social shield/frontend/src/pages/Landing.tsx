@@ -14,20 +14,31 @@ const Landing = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Video Background */}
+        {/* Video - Top Left Corner */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
+          className="absolute top-20 left-8 w-96 h-64 object-cover rounded-lg shadow-2xl border-2 border-primary/30 z-5"
+        >
+          <source src="/videos/video.mp4" type="video/mp4" />
+        </video>
+
+        {/* Background Video Full Screen */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
         >
           <source src="/videos/video.mp4" type="video/mp4" />
           <source src={heroBg} />
         </video>
 
         {/* Overlay with transparency */}
-        <div className="absolute inset-0 bg-background/40" />
+        <div className="absolute inset-0 bg-background/50" />
 
         {/* Top bar */}
         <motion.div
@@ -86,6 +97,92 @@ const Landing = () => {
           animate={{ scaleX: 1 }}
           transition={{ duration: 1.5, delay: 0.8 }}
         />
+      </section>
+
+      <HowItWorks />
+      
+      {/* About Section */}
+      <section className="relative py-24 px-8 bg-gradient-to-b from-background to-muted overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={spring}
+            viewport={{ once: true, margin: "-100px" }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-5xl font-bold text-foreground mb-4">About Social Shield</h2>
+            <div className="h-1 w-24 bg-primary mx-auto rounded-full"></div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.2 }}
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
+          >
+            {/* Left - About Text */}
+            <div className="space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Social Shield is a smart platform designed to detect and prevent fake accounts across social media. Our mission is to create a safer digital environment by identifying suspicious behavior, analyzing account authenticity, and protecting users from scams, impersonation, and misinformation.
+              </p>
+              
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Using advanced technology and data-driven insights, Social Shield helps individuals and organizations verify profiles, build trust, and stay secure online.
+              </p>
+
+              <div className="pt-6">
+                <button
+                  onClick={() => navigate("/platform")}
+                  className="inline-flex items-center gap-3 bg-primary text-primary-foreground px-8 py-3 rounded-sm font-semibold text-sm uppercase tracking-widest border border-primary hover:bg-primary/90 transition-colors"
+                >
+                  Start Verification
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Right - Features Grid */}
+            <div className="grid grid-cols-1 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ ...spring, delay: 0.3 }}
+                viewport={{ once: true }}
+                className="p-6 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors"
+              >
+                <Shield className="w-8 h-8 text-primary mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Detect Fake Accounts</h3>
+                <p className="text-sm text-muted-foreground">Advanced algorithms identify suspicious patterns and fake profiles</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ ...spring, delay: 0.4 }}
+                viewport={{ once: true }}
+                className="p-6 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors"
+              >
+                <Shield className="w-8 h-8 text-primary mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Verify Authenticity</h3>
+                <p className="text-sm text-muted-foreground">Comprehensive analysis of account metrics and behavior patterns</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ ...spring, delay: 0.5 }}
+                viewport={{ once: true }}
+                className="p-6 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors"
+              >
+                <Shield className="w-8 h-8 text-primary mb-3" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">Stay Secure</h3>
+                <p className="text-sm text-muted-foreground">Protect yourself from scams, impersonation, and misinformation</p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       <HowItWorks />

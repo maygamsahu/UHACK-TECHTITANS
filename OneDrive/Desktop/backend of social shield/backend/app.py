@@ -160,5 +160,56 @@ def health_check():
         "version": "1.0.0"
     })
 
+@app.route('/debug/screenshot-ocr', methods=['POST'])
+def debug_screenshot_ocr():
+    """Debug endpoint to test OCR extraction from screenshot"""
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "No image uploaded"}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Save temporary file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"debug_{filename}")
+        file.save(file_path)
+        
+        try:
+            # Test OCR extraction
+            image_processor = private_handler.image_processor
+            
+            # Get raw OCR text
+            import cv2
+            import pytesseract
+            img = cv2.imread(file_path)
+            raw_text = pytesseract.image_to_string(img)
+            
+            # Get parsed data
+            ocr_data = image_processor.extract_text_from_image(file_path)
+            
+            # Get defaults for comparison
+            default_data = image_processor._get_default_data()
+            
+            result = {
+                "raw_ocr_text": raw_text[:500],  # First 500 chars
+                "parsed_data": ocr_data,
+                "default_data": default_data,
+                "extraction_successful": ocr_data is not None,
+                "data_changed": ocr_data != default_data if ocr_data else False
+            }
+            
+            return jsonify(result)
+        finally:
+            # Clean up
+            try:
+                os.remove(file_path)
+            except:
+                pass
+    
+    except Exception as e:
+        return jsonify({"error": f"Debug error: {str(e)}"}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

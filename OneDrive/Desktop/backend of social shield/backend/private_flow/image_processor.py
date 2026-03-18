@@ -19,7 +19,7 @@ class ImageProcessor:
             # Load image using OpenCV
             img = cv2.imread(image_path)
             if img is None:
-                return self._get_default_data()
+                return None  # Return None to indicate failure
 
             # Preprocessing for better OCR
             # 1. Convert to grayscale
@@ -35,8 +35,7 @@ class ImageProcessor:
             _, thresh = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             # Perform OCR on processed image
-            # FIX: Use only preprocessed image (more accurate) to avoid duplicate data
-            # Using custom config for better result (treating image as a sparse text block)
+            # Using custom config for better result
             custom_config = r'--oem 3 --psm 6'
             text = pytesseract.image_to_string(thresh, config=custom_config)
             
@@ -44,102 +43,118 @@ class ImageProcessor:
             if not text.strip():
                 text = pytesseract.image_to_string(img)
             
-            # Extract key information from the best OCR result
+            # Extract key information from OCR result
             data = self._parse_text(text)
-            return data
+            
+            # CRITICAL FIX: Return None if OCR didn't extract actual metrics
+            if data and self._is_meaningful_data(data):
+                return data
+            else:
+                return None  # Signal that OCR failed to extract real data
+                
         except Exception as e:
             print(f"OCR Error: {e}")
-            return self._get_default_data()
+            return None  # Return None on error, not defaults
+    
+    def _is_meaningful_data(self, data: Dict) -> bool:
+        """Check if OCR extracted real data or just defaults"""
+        if not data:
+            return False
+        
+        # If metrics are still at defaults AND we have no username, it's likely OCR failed
+        is_all_defaults = (
+            data.get('#posts', 50) == 50 and
+            data.get('#followers', 200) == 200 and
+            data.get('#follows', 150) == 150
+        )
+        
+        # At least one metric was changed from defaults
+        return not is_all_defaults
     
     def _parse_text(self, text: str) -> Dict:
-        """Robust parsing of extracted text to find Instagram metrics (DeepSeek-style logic)"""
+        """Robust parsing of extracted text to find Instagram metrics"""
         data = self._get_default_data()
+        
+        if not text or not text.strip():
+            return data
         
         # Normalize text
         text = text.replace(',', '')
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         
-        # Extract metrics (Posts, Followers, Following)
-        # Look for the "Posts", "Followers", "Following" keywords and associated numbers
-        for i, line in enumerate(lines):
-            # Check for numbers followed by metric names (common in grid/header)
-            # Pattern: <Number> <Metric>
-            metric_match = re.search(r'(\d+)\s*(posts|followers|following)', line, re.IGNORECASE)
-            if metric_match:
-                val = int(metric_match.group(1))
-                label = metric_match.group(2).lower()
-                if 'posts' in label: data['#posts'] = val
-                elif 'followers' in label: data['#followers'] = val
-                elif 'following' in label: data['#follows'] = val
-                
-            # Check for metric names followed by numbers (common in some layouts)
-            # Pattern: <Metric> <Number>
-            metric_match_rev = re.search(r'(posts|followers|following)\s*(\d+)', line, re.IGNORECASE)
-            if metric_match_rev:
-                val = int(metric_match_rev.group(2))
-                label = metric_match_rev.group(1).lower()
-                if 'posts' in label and data['#posts'] == 50: data['#posts'] = val
-                elif 'followers' in label and data['#followers'] == 200: data['#followers'] = val
-                elif 'following' in label and data['#follows'] == 150: data['#follows'] = val
+        # Extract metrics with multiple pattern variations
+        full_text = ' '.join(lines).lower()
+        
+        # Pattern 1: "123 Posts" or "posts 123"
+        posts_match = re.search(r'(\d+)\s*posts?\b|\bposts?\s*(\d+)', full_text)
+        if posts_match:
+            data['#posts'] = int(posts_match.group(1) or posts_match.group(2))
+        
+        # Pattern 2: "123 Followers" or "followers 123"
+        followers_match = re.search(r'(\d+)\s*followers?\b|\bfollowers?\s*(\d+)', full_text)
+        if followers_match:
+            data['#followers'] = int(followers_match.group(1) or followers_match.group(2))
+        
+        # Pattern 3: "123 Following" or "following 123"
+        following_match = re.search(r'(\d+)\s*following\b|\bfollowing\s*(\d+)', full_text)
+        if following_match:
+            data['#follows'] = int(following_match.group(1) or following_match.group(2))
 
-        # Handle columns (Number on one line, Label on next)
+        # Handle column layout (number on one line, label on next)
         for i in range(len(lines) - 1):
             if lines[i].isdigit():
                 val = int(lines[i])
-                label = lines[i+1].lower()
-                if 'posts' in label: data['#posts'] = val
-                elif 'followers' in label: data['#followers'] = val
-                elif 'following' in label: data['#follows'] = val
+                label = lines[i+1].lower() if i+1 < len(lines) else ""
+                
+                # Check label in next 2 lines for flexibility
+                for j in range(i+1, min(i+3, len(lines))):
+                    label_check = lines[j].lower()
+                    if 'post' in label_check and data['#posts'] == 50:
+                        data['#posts'] = val
+                    elif 'follow' in label_check and 'follower' in label_check and data['#followers'] == 200:
+                        data['#followers'] = val
+                    elif 'follow' in label_check and 'follower' not in label_check and data['#follows'] == 150:
+                        data['#follows'] = val
         
-        # Username Extraction (looking for @ or common header placement)
-        # Often the first line or a line with no spaces
-        username = None
+        # Username Extraction
         for line in lines:
             if line.startswith('@'):
-                username = line[1:]
+                username = line[1:].split()[0]  # Handle lines like "@ username"
                 break
-            # Provided image has boss667jjsnsjsnbgy at the top
-            if 'jjsnsjsn' in line.lower(): # Specific to the user's example if OCR is slightly messy
-                username = line.strip()
-                break
-        
-        if not username and lines:
-            # Fallback: look for likely username line (usually first non-digit line)
+        else:
+            # Fallback: find line that looks like username (no spaces, reasonable length)
+            username = None
             for line in lines:
-                if not line.isdigit() and len(line) > 3 and ' ' not in line:
+                if (3 <= len(line) <= 30 and 
+                    ' ' not in line and 
+                    not line.isdigit() and
+                    not any(word in line.lower() for word in ['post', 'follow', 'edit', 'message'])):
                     username = line
                     break
 
         if username:
-            # Calculate username metrics
             digit_count = len([c for c in username if c.isdigit()])
             data['nums/length username'] = digit_count / len(username) if username else 0
-            
-            # name == username check
-            # Look for another line that's same as username but without @
-            for line in lines:
-                if line.lower() == username.lower() and line != username:
-                    data['name==username'] = 1
-                    break
 
-        # Fullname words extraction
-        # Look for lines after username that aren't metrics
-        for line in lines:
-            if line != username and not any(m in line.lower() for m in ['posts', 'followers', 'following']) and not line.isdigit():
-                words = line.split()
-                if 1 <= len(words) <= 3:
-                    data['fullname words'] = len(words)
-                    digit_count_fn = len([c for c in line if c.isdigit()])
-                    data['nums/length fullname'] = digit_count_fn / len(line) if line else 0
-                    break
-
-        # Description length
-        # Look for lines that look like a bio
-        for line in lines:
-            if len(line) > 5 and not any(m in line.lower() for m in ['posts', 'followers', 'following', 'edit profile']):
-                if line != username and data['fullname words'] > 0: # Assuming bio comes after name
+        # Fullname and bio extraction
+        fullname = None
+        bio = None
+        
+        for i, line in enumerate(lines):
+            if fullname is None and line != username and not line.isdigit():
+                if not any(m in line.lower() for m in ['post', 'follow', 'edit', 'message']):
+                    if len(line) > 0 and len(line) < 50:
+                        fullname = line
+                        words = line.split()
+                        if len(words) <= 3:
+                            data['fullname words'] = len(words)
+                            digit_count_fn = len([c for c in line if c.isdigit()])
+                            data['nums/length fullname'] = digit_count_fn / len(line) if line else 0
+            elif fullname and bio is None and line != username and line != fullname:
+                if (len(line) > 10 and not any(m in line.lower() for m in ['post', 'follow', 'edit', 'message']) 
+                    and not line.isdigit()):
+                    bio = line
                     data['description length'] = len(line)
-                    # Check for external URL
                     if re.search(r'https?://[^\s]+', line) or '.com' in line or '.in' in line:
                         data['external URL'] = 1
                     break
